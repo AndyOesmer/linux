@@ -688,8 +688,10 @@ static int ahash_prepare_alg(struct ahash_alg *alg)
 	struct crypto_alg *base = &alg->halg.base;
 	int err;
 
-	if (alg->halg.statesize == 0)
+	if (alg->halg.statesize == 0) {
+		pr_info("got 0 statesize\n");
 		return -EINVAL;
+	}
 
 	err = hash_prepare_alg(&alg->halg);
 	if (err)
@@ -712,8 +714,10 @@ int crypto_register_ahash(struct ahash_alg *alg)
 	int err;
 
 	err = ahash_prepare_alg(alg);
-	if (err)
+	if (err) {
+		pr_info("could not prepare alg\n");
 		return err;
+	}
 
 	return crypto_register_alg(base);
 }
