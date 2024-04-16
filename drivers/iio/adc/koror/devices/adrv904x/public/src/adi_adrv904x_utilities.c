@@ -1027,7 +1027,12 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_DeviceInfoExtract(adi_adrv904x_Dev
     uint32_t                        bandIdx             = 0U;
     uint32_t                        targetIdx           = 0U;
     uint32_t                        digMask             = 0U;
+#ifdef __KERNEL__
+    // sizeof(adi_adrv904x_InitExtract_t) = 11980
+    static adi_adrv904x_InitExtract_t      InitExtractClear;
+#else
     adi_adrv904x_InitExtract_t      InitExtractClear;
+#endif
     adrv904x_TxConfig_t             txConfig;
     adrv904x_RxConfig_t             rxConfig;
     adrv904x_OrxConfig_t            orxConfig;
