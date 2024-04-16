@@ -14,6 +14,7 @@
 
 #ifdef __KERNEL__
 #include <linux/kernel.h>
+#include <linux/ctype.h>
 #include <linux/time.h>
 #else
 #include <stddef.h>
@@ -27,16 +28,25 @@
 #include <time.h>
 #include <limits.h>
 #include <ctype.h>
+#endif
 
 /* stddef.h */
 #define ADI_LIBRARY_OFFSETOF                            offsetof
 
 /* stdio.h */
+#ifndef __KERNEL__
 #define ADI_LIBRARY_PRINTF                              printf
+#else
+#define ADI_LIBRARY_PRINTF                              printk
+#endif
 #define ADI_LIBRARY_FPRINTF                             fprintf
+#ifndef __KERNEL__
 #define ADI_LIBRARY_SPRINTF                             sprintf
+#endif
 #define ADI_LIBRARY_SNPRINTF                            snprintf
+#ifndef __KERNEL__
 #define ADI_LIBRARY_VPRINTF                             vprintf
+#endif
 #define ADI_LIBRARY_VSNPRINTF                           vsnprintf
 #define ADI_LIBRARY_FFLUSH                              fflush
 #define ADI_LIBRARY_FSEEK                               fseek
@@ -47,21 +57,29 @@
 #define ADI_LIBRARY_FCLOSE                              fclose
 #define ADI_LIBRARY_FTELL                               ftell
 #define ADI_LIBRARY_FERROR                              ferror
+#ifndef __KERNEL__
 #define ADI_LIBRARY_SETVBUF                             setvbuf
+#endif
 
 /* stdlib.h */
+#ifndef __KERNEL__
 #define ADI_LIBRARY_CALLOC                              calloc
 #define ADI_LIBRARY_FREE                                free
 #define ADI_LIBRARY_RAND                                rand
 #define ADI_LIBRARY_EXIT                                exit
 #define ADI_LIBRARY_ABS                                 abs
+#else
+#define ADI_LIBRARY_FREE                                kfree
+#endif
 
 /* stdarg.h */
 #define ADI_LIBRARY_VA_START                            va_start
 #define ADI_LIBRARY_VA_END                              va_end
 
 /* math.h*/
+#ifndef __KERNEL__
 #define ADI_LIBRARY_CEIL                                ceil
+#endif
 
 /* string.h */
 #define ADI_LIBRARY_MEMSET                              memset
@@ -98,9 +116,15 @@
 #define ADI_LIBRARY_MKTIME                              mktime
 #define ADI_LIBRARY_CTIME                               ctime
 #define ADI_LIBRARY_NANOSLEEP                           nanosleep
+#ifndef __KERNEL__
 #define ADI_LIBRARY_CLOCK                               clock
+#else
+#define ADI_LIBRARY_CLOCK                               ktime_get_ns
+#endif
 #define ADI_LIBRARY_CLOCKS_PER_SEC                      CLOCKS_PER_SEC
+#ifndef __KERNEL__
 #define ADI_LIBRARY_GMTIME                              gmtime
+#endif
 
 /* ctype.h */
 #define ADI_LIBRARY_TOUPPER                             toupper
