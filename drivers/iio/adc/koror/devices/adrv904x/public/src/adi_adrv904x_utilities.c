@@ -56,6 +56,9 @@
 #include "../../private/bf/adrv904x_bf_sequencer.h"
 
 #define ADI_FILE    ADI_ADRV904X_FILE_PUBLIC_UTILITIES
+#ifdef __KERNEL__
+#define UINT32_MAX		(4294967295U)
+#endif
 
 /*****************************************************************************/
 /***** Helper functions' prototypes ******************************************/

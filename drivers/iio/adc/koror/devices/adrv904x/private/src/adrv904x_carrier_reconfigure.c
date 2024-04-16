@@ -652,7 +652,11 @@ static uint32_t adrv904x_CarrierRateCalculate(const uint32_t hsDigRate_kHz, cons
     return carrierRateRatio;
 }
 
+#ifndef __KERNEL__
 static void swap(uint16_t* const a, uint16_t* const b)
+#else
+static void adrv904x_swap(uint16_t* const a, uint16_t* const b)
+#endif
 {
     uint16_t tmp = *a;
 
@@ -714,9 +718,15 @@ static adi_adrv904x_ErrAction_e adrv904x_CarrierJesdSlotTableCalculate( adi_adrv
         }
 
         /* Swap */
+#ifndef __KERNEL__
         swap(&ratios[minIdx], &ratios[carrierIdx]);
         swap(&count[minIdx], &count[carrierIdx]);
         swap(&indexMap[minIdx], &indexMap[carrierIdx]);
+#else
+        adrv904x_swap(&ratios[minIdx], &ratios[carrierIdx]);
+        adrv904x_swap(&count[minIdx], &count[carrierIdx]);
+        adrv904x_swap(&indexMap[minIdx], &indexMap[carrierIdx]);
+#endif
     }
 
     /* Build Slot Table. Start from clean slate */
