@@ -2565,7 +2565,11 @@ static adi_adrv904x_ErrAction_e adrv904x_CpuMemDumpBinWrite(adi_adrv904x_Device_
     uint16_t   fileFormatVersion    = 0U;
     uint16_t   productId            = 0U;
     uint16_t   productRevision      = 0U;
+#ifdef __KERNEL__
+    time64_t     rawtime;
+#else
     time_t     rawtime;
+#endif
     struct tm *tmPtr;
 
     /* Generic record header varibales */
@@ -2800,8 +2804,19 @@ static adi_adrv904x_ErrAction_e adrv904x_CpuMemDumpBinWrite(adi_adrv904x_Device_
     adrv904x_Core_EfuseProductId_BfGet(device, NULL, ADRV904X_BF_DIGITAL_CORE_SPI_ONLY_REGS, (uint8_t*) &productId);
     productId = ADI_ADRV904X_PRODUCT_ID_MASK | productId;
     /* Find dump time */
+#ifndef __KERNEL__
     ADI_LIBRARY_TIME(&rawtime);
     tmPtr = ADI_LIBRARY_GMTIME(&rawtime);
+#else
+    rawtime = ktime_get_seconds();
+    tmPtr = (struct tm *)kzalloc(sizeof(struct tm), GFP_KERNEL);
+    tmPtr->tm_sec = rawtime % 60;
+    tmPtr->tm_min = (rawtime / 60) % 60;
+    tmPtr->tm_hour = (rawtime / 3600) % 24;
+    tmPtr->tm_mday = (rawtime / 86400) + 1; // Add 1 to start from day 1
+    tmPtr->tm_mon = 0; // Month is always January
+    tmPtr->tm_year = 70; // Year 1970 (UNIX epoch)
+#endif
 
     /* Generate header record*/
     ADI_LIBRARY_MEMSET(binaryRead, 0, sizeof(binaryRead));                          /* Set binary to 0's */
@@ -2862,8 +2877,17 @@ static adi_adrv904x_ErrAction_e adrv904x_CpuMemDumpBinWrite(adi_adrv904x_Device_
     driverVersionPatch = ADI_ADRV904X_CURRENT_MAINTENANCE_VERSION;
     driverVersionBuild = ADI_ADRV904X_CURRENT_BUILD_VERSION;
 
+#ifndef __KERNEL__
     /* Only Koror enables init time */
     tmPtr = ADI_LIBRARY_GMTIME(&(device->devStateInfo.initGlobalTime));
+#else
+    tmPtr->tm_sec = device->devStateInfo.initGlobalTime % 60;
+    tmPtr->tm_min = (device->devStateInfo.initGlobalTime / 60) % 60;
+    tmPtr->tm_hour = (device->devStateInfo.initGlobalTime / 3600) % 24;
+    tmPtr->tm_mday = (device->devStateInfo.initGlobalTime / 86400) + 1; // Add 1 to start from day 1
+    tmPtr->tm_mon = 0; // Month is always January
+    tmPtr->tm_year = 70; // Year 1970 (UNIX epoch)
+#endif
     tmYear  =  tmPtr->tm_year;
     tmMonth =  tmPtr->tm_mon;
     tmDay   =  tmPtr->tm_mday;
