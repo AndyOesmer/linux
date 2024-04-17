@@ -25,6 +25,13 @@
 #include "../../private/include/adrv904x_rx.h"
 #include "../../private/include/adrv904x_tx.h"
 
+#ifdef __KERNEL__
+# define INT16_MIN		(-32767-1)
+# define INT16_MAX		(32767)
+# define UINT16_MAX		(65535)
+# define UINT32_MAX		(4294967295U)
+#endif
+
 #define ADRV904X_SLOTS_PER_REGISTER  (8U)
 #define ADRV904X_LAST_VALID_SLOT_SELECT_IN_CARRIER_MODE (31U)
 #define ADRV904X_JESD_INT_INTERLEAVING_RATIO (4U)
