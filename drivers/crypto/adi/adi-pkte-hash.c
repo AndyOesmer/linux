@@ -1,3 +1,5 @@
+//#define DEBUG
+
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Packet engine driver for Analog Devices Incorporated
@@ -12,6 +14,7 @@
  */
 
 #include <linux/clk.h>
+#include <linux/sched.h>
 #include <linux/crypto.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
@@ -279,6 +282,7 @@ static int adi_process_packet(struct adi_dev *pkte_dev,
 {
 	unsigned int len32;
 	u32 temp, pos;
+	u8 pkte_ctl_stat;
 #ifdef DEBUG_PKTE
 	char tempString[8192];
 	int i = 0, j = 0;
@@ -315,11 +319,18 @@ static int adi_process_packet(struct adi_dev *pkte_dev,
 		processing = 1;
 	}
 
-	while (!(adi_read(pkte_dev, STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN))
-		;
+	pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN;
+	while (!pkte_ctl_stat) {
+		pkte_ctl_stat =
+			adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN;
+		cond_resched();
+	}
 
-	while (!(adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY))
-		;
+	pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY;
+	while (!pkte_ctl_stat) {
+		pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY;
+		cond_resched();
+	}
 
 	pkte->pPkteList.pSource = &pkte->source[pkte_dev->ring_pos_consume][0];
 
@@ -433,6 +444,7 @@ static void adi_prepare_secret_key(struct adi_dev *pkte_dev, struct adi_request_
 	u32 i;
 	u8 *source_bytewise;
 	struct ADI_PKTE_DEVICE *pkte;
+	u8 pkte_ctl_stat;
 
 	pkte = pkte_dev->pkte_device;
 
@@ -449,12 +461,19 @@ static void adi_prepare_secret_key(struct adi_dev *pkte_dev, struct adi_request_
 	adi_process_packet(pkte_dev, INNER_OUTER_KEY_SIZE, 0);
 
 	if (!(pkte_dev->flags & PKTE_HOST_MODE)) {
-		while (!(adi_read(pkte_dev, STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN))
-			;
+		pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN;
+		while (!pkte_ctl_stat) {
+			pkte_ctl_stat =
+				adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN;
+			cond_resched();
+		}
 	}
 
-	while (!(adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY))
-		;
+	pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY;
+	while (!pkte_ctl_stat) {
+		pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY;
+		cond_resched();
+	}
 
 	pkte_dev->ring_pos_produce++;
 
@@ -668,6 +687,7 @@ static void adi_finish_req(struct ahash_request *req, int err)
 	u32 i, digestLength;
 	u8 *source_bytewise;
 	struct ADI_PKTE_DEVICE *pkte;
+	u8 pkte_ctl_stat;
 
 
 	dev_dbg(pkte_dev->dev, "%s flags %lx\n", __func__, pkte_dev->flags);
@@ -676,8 +696,11 @@ static void adi_finish_req(struct ahash_request *req, int err)
 
 	if (!err && (PKTE_FLAGS_FINAL & pkte_dev->flags)) {
 		wait_event_interruptible(wq_ready, ready == 1);
-		while (!(adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY))
-			;
+		pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY;
+		while (!pkte_ctl_stat) {
+			pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY;
+			cond_resched();
+		}
 
 		//if(pkte_dev->flags & PKTE_HOST_MODE)
 		adi_read_packet(pkte_dev, &pkte->pPkteList.pDestination[0]);
@@ -709,11 +732,19 @@ static void adi_finish_req(struct ahash_request *req, int err)
 
 			adi_process_packet(pkte_dev, INNER_OUTER_KEY_SIZE+(digestLength*4), 1);
 			if (!(pkte_dev->flags & PKTE_HOST_MODE)) {
-				while (!(adi_read(pkte_dev, STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN))
-					;
+				pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN;
+				while (!pkte_ctl_stat) {
+					pkte_ctl_stat =
+						adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_STAT_OUTPTDN;
+					cond_resched();
+				}
 			}
-			while (!(adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY))
-				;
+
+			pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY;
+			while (!pkte_ctl_stat) {
+				pkte_ctl_stat = adi_read(pkte_dev, CTL_STAT_OFFSET) & BITM_PKTE_CTL_STAT_PERDY;
+				cond_resched();
+			}
 
 			adi_read_packet(pkte_dev, &pkte->pPkteList.pDestination[0]);
 		}
