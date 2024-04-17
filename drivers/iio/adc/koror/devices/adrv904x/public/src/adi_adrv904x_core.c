@@ -128,13 +128,13 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_HwOpen(adi_adrv904x_Device_t* cons
         }
 
         /* Earliest Point for Logging */
-        adi_common_LogLevelSet(&device->common, ADI_ADRV904X_LOGGING);
+        adi_adrv904x_LogLevelSet(&device->common, ADI_ADRV904X_LOGGING);
 
         ADI_FUNCTION_ENTRY_LOG(&device->common, ADI_HAL_LOG_API);
 
         /* Indicate device is now open or else HwReset will fail */
         ADI_COMMON_DEVICE_STATE_OPEN_SET(device->common);
-        
+
         if ((device->devStateInfo.devState & ADI_ADRV904X_STATE_POWERONRESET) != ADI_ADRV904X_STATE_POWERONRESET)
         {
             /* Only HwReset on first call to HwOpen, end user must explicitly call HwReset
