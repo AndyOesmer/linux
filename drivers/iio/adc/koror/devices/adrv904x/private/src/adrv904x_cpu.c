@@ -988,7 +988,11 @@ ADI_API adi_adrv904x_ErrAction_e adrv904x_CpuCmdSend(adi_adrv904x_Device_t* cons
     adrv904x_CpuCmdResp_t *rxRsp = NULL;
     adrv904x_CpuCmdId_t rspCmdId;
     adrv904x_CpuCmdStatus_e cmdStatus;
+#ifndef __KERNEL__
     uint8_t cmdBuf[sizeof(adrv904x_MaxCpuCmdBufSz_t)];
+#else
+    static uint8_t cmdBuf[sizeof(adrv904x_MaxCpuCmdBufSz_t)];
+#endif
 
     ADI_ADRV904X_NULL_DEVICE_PTR_RETURN(device);
 
