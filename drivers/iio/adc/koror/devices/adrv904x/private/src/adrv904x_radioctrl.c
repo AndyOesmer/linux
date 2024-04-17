@@ -1072,7 +1072,8 @@ adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierConfigSet(adi_adrv90
         }
 
         /* Convert from mdB to 7.16. (reg value = 10**(value in mdB/1000/20)) * 2^16) */
-        carrierGainReg = (uint32_t)((double)pow(10, (double)carrierGain / 1000U / 20U) * DIG_GAIN_MULT);
+        //carrierGainReg = (uint32_t)((double)pow(10, (double)carrierGain / 1000U / 20U) * DIG_GAIN_MULT);
+        carrierGainReg = (uint32_t)int_20db_to_mag(DIG_GAIN_MULT, carrierGain);
         carrierGainReg &= 0x003FFFFF; /* Mask 23 bits of gain */
         tempAddress = extendedCoreScratchRegBaseAddress + 4U * (ADRV904X_ANTENNA_CAL_RX_CARRIER_0_GAIN + i);
         recoveryAction = adi_adrv904x_Register32Write(device, NULL, tempAddress, carrierGainReg, 0xFFFFFFFF);
@@ -1096,7 +1097,8 @@ adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierConfigSet(adi_adrv90
         }
 
         /* Convert from mdB to 7.16. (reg value = 10**(value in mdB/1000/20)) * 2^16) */
-        carrierGainReg = (uint32_t)((double)pow(10, (double)carrierGain / 1000U / 20U) * DIG_GAIN_MULT);
+        //carrierGainReg = (uint32_t)((double)pow(10, (double)carrierGain / 1000U / 20U) * DIG_GAIN_MULT);
+        carrierGainReg = (uint32_t)int_20db_to_mag(DIG_GAIN_MULT, carrierGain);
         carrierGainReg &= 0x003FFFFF; /* Mask 23 bits of gain */
         
         tempAddress = extendedCoreScratchRegBaseAddress + 4U * (ADRV904X_ANTENNA_CAL_TX_CARRIER_0_GAIN + i);
