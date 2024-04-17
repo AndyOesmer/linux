@@ -288,7 +288,11 @@ cleanup :
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_Initialize(adi_adrv904x_Device_t* const        device,
                                                          const adi_adrv904x_Init_t* const    init)
 {
+#ifndef __KERNEL__
         adi_adrv904x_Info_t devStateInfoClear;
+#else
+	static adi_adrv904x_Info_t devStateInfoClear;
+#endif
     adi_adrv904x_ErrAction_e recoveryAction = ADI_ADRV904X_ERR_ACT_CHECK_PARAM;
     uint8_t idx = 0U;
     uint8_t TX_SPIMODE_ENABLE_ALLCH = 0xFFU;
