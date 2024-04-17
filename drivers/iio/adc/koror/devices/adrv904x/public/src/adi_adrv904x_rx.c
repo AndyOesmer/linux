@@ -3863,7 +3863,7 @@ cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
 
-
+#ifndef __KERNEL__
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierRssiPowerRead(adi_adrv904x_Device_t* const              device,
                                                                      const adi_adrv904x_RxCarrierMask_t* const rxCarrierMask,
                                                                      int32_t* const                            gain_mdB)
@@ -3872,6 +3872,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierRssiPowerRead(adi_adrv904
     uint32_t carrierIdx = 0U;
     uint64_t  bfValue = 0U;
     adrv904x_BfCddcFuncsChanAddr_e cddcFuncsChanBaseAddr = ADRV904X_BF_SLICE_RX_0__RX_CDDC_RX_CDDC_FUNCS;
+    uint64_t pow_2_to_36 = 68719476736;
 
     ADI_ADRV904X_NULL_DEVICE_PTR_RETURN(device);
     ADI_ADRV904X_API_ENTRY(&device->common);
@@ -3967,12 +3968,12 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierRssiPowerRead(adi_adrv904
     }
 
     /* The bfValue is in 0.36 bit format. Convert it to mdb */
-    *gain_mdB = 10 * log10(bfValue / pow(2,36)) * 1000;
+    *gain_mdB = 10 * ilog10(bfValue / pow_2_to_36) * 1000;
     
 cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
-
+#endif
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierGainAdjustSet(adi_adrv904x_Device_t * const              device,
                                                                      const adi_adrv904x_RxCarrierMask_t * const rxCarrierMask,
                                                                      const int32_t                              gain_mdB)
@@ -4024,7 +4025,8 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierGainAdjustSet(adi_adrv904
     }
 
     /* Convert from mdB to 7.16. (reg value = 10**(value in mdB/1000/20)) * 2^16) */
-    bfValue = (uint32_t)((double)pow(10, (double)gain_mdB / 1000U / 20U) * DIG_GAIN_MULT);
+    //bfValue = (uint32_t)((double)pow(10, (double)gain_mdB / 1000U / 20U) * DIG_GAIN_MULT);
+    bfValue = (uint32_t)int_20db_to_mag(DIG_GAIN_MULT, gain_mdB);
 
     /* Write out the enable */
     for (rxIdx = 0U; rxIdx < ADI_ADRV904X_MAX_RX_ONLY; rxIdx++)
@@ -4130,7 +4132,7 @@ cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
 
-
+#ifndef __KERNEL__
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierGainAdjustGet(adi_adrv904x_Device_t * const              device,
                                                                      const adi_adrv904x_RxCarrierMask_t * const rxCarrierMask,
                                                                      int32_t * const                            gain_mdB)
@@ -4242,13 +4244,13 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierGainAdjustGet(adi_adrv904
     if (bfValue != 0U)
     {
         /* Convert from 7.16 to mdB.  value in mdB = (1000*20*log10(reg value/2^16)) */
-        *gain_mdB = (int32_t)(1000U * 20U * log10((double)bfValue / DIG_GAIN_MULT));
+        *gain_mdB = (int32_t)(1000U * 20U * ilog10((double)bfValue / DIG_GAIN_MULT));
     }
 
 cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
-
+#endif
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxDynamicCarrierCalculate(adi_adrv904x_Device_t* const                                device,
                                                                         adi_adrv904x_CarrierJesdCfg_t* const                        jesdCfg,
                                                                         adi_adrv904x_CarrierRadioCfg_t                              rxCarrierConfigs[],
@@ -5283,7 +5285,7 @@ cleanup :
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
 
-
+#ifndef __KERNEL__
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxRssiReadBack(adi_adrv904x_Device_t* const device,
                                                              const uint16_t               meterSel,
                                                              const uint32_t               channelSel,
@@ -5295,6 +5297,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxRssiReadBack(adi_adrv904x_Device
     adrv904x_DfeSvcCmdDfeMtrRssiReadbackResp_t respStruct;
     adrv904x_DfeSvcCmdStatus_t cmdStatus = ADRV904X_DFE_SVC_CMD_STATUS_GENERIC;
     adi_adrv904x_DfeSvcErrCode_e cpuErrorCode = ADI_ADRV904X_DFE_SVC_ERR_CODE_DFE_EVENT_UNEXPECTED;
+    uint64_t pow_2_to_36 = 68719476736;
 
     /* Check device pointer is not null */
     ADI_ADRV904X_NULL_DEVICE_PTR_RETURN(device);
@@ -5362,7 +5365,9 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxRssiReadBack(adi_adrv904x_Device
     }
 
     *pPwrMeasDb     = (float)respStruct.pwrMeasDb / 4.0f;
-    *pPwrMeasLinear = 10 * log10(respStruct.pwrMeasLinear / pow(2,36));
+//     *pPwrMeasLinear = 10 * ilog10(respStruct.pwrMeasLinear / pow(2,36));
+    *pPwrMeasLinear = 10 * ilog10(respStruct.pwrMeasLinear / pow_2_to_36);
 cleanup :
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
+#endif

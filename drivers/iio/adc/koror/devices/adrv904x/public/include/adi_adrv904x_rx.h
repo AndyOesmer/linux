@@ -974,7 +974,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierRssiGpioCfgSet(adi_adrv90
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierRssiGpioCfgGet(adi_adrv904x_Device_t * const               device,
                                                                       adi_adrv904x_RxCarrierRssiGpioCfg_t * const gpioCfg);
 
-
+#ifndef __KERNEL__
 /**
  * \brief Readback most recent power measurement from a Rx Carrier RSSI in mdB.
  * 
@@ -992,7 +992,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierRssiGpioCfgGet(adi_adrv90
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierRssiPowerRead(adi_adrv904x_Device_t * const              device,
                                                                      const adi_adrv904x_RxCarrierMask_t * const rxCarrierMask,
                                                                      int32_t * const                            gain_mdB);
-
+#endif
  /**
  * \brief Adjust Rx Carrier Gain in mdB. Valid range is -90dB to +36dB.
  *
@@ -1014,7 +1014,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierRssiPowerRead(adi_adrv904
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierGainAdjustSet(adi_adrv904x_Device_t * const              device,
                                                                      const adi_adrv904x_RxCarrierMask_t * const rxCarrierMask,
                                                                      const int32_t                              gain_mdB);   
-
+#ifndef __KERNEL__
 /**
  * \brief Readback current Rx Carrier Gain Adjustment in mdB. Expected range is -90dB to +36dB.
  * 
@@ -1032,7 +1032,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierGainAdjustSet(adi_adrv904
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxCarrierGainAdjustGet(adi_adrv904x_Device_t * const              device,
                                                                      const adi_adrv904x_RxCarrierMask_t * const rxCarrierMask,
                                                                      int32_t * const                            gain_mdB);
-
+#endif
 /** 
 * \brief Reconfigure Rx carriers dynamically without reinitialization - Solving without applying solution to HW
 * 
@@ -1253,6 +1253,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxRssiEnable(adi_adrv904x_Device_t
                                                            const uint16_t               meterMask,
                                                            const uint32_t               channelMask,
                                                            const uint8_t                enable);
+#ifndef __KERNEL__
 /**
  * \brief       Readback RSSI (DDC/CDDC) power measurement
  * This function reads back the RSSI (DDC/CDDC) power measurement
@@ -1274,5 +1275,6 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RxRssiReadBack(adi_adrv904x_Device
                                                              const uint32_t               channelSel,
                                                              float* const                 pPwrMeasDb,
                                                              float* const                 pPwrMeasLinear);
+#endif
 
 #endif /* _ADI_ADRV904X_RX_H_ */

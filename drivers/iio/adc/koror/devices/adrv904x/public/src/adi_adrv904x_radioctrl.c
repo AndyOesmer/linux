@@ -2985,9 +2985,9 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_OrxNcoFreqCalculate(adi_adrv904x_D
         goto cleanup;
     }
 
-    passbandEdgeShift = (int32_t)((HB_FILTER_PASSBAND_EDGE *
+    passbandEdgeShift = (int32_t)((44 *
                                   device->initExtract.orx.orxChannelCfg[orxChannelIdx].orxOutputRate_kHz) -
-                                  ((float)(txSynthesisBwUpper_kHz - centreTxSynthesisBw_kHz)));
+                                  ((txSynthesisBwUpper_kHz - centreTxSynthesisBw_kHz)*100))/100;
     /* If passbandEdgeShift is less than 0, the synthesis BW is greater than the 88% bandwidth supported by the ORx*/
     if (passbandEdgeShift < 0)
     {
@@ -8611,7 +8611,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgSet_v2(ad
 cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
-
+#ifndef __KERNEL__
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgGet(adi_adrv904x_Device_t* const device,
                                                                            adi_adrv904x_RadioCtrlAntCalCarrierCfg_t* const antCalCarrierCfg)
 {
@@ -8726,7 +8726,8 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgGet(adi_a
         if (carrierGainReg != 0U)
         {
             /* Convert from 7.16 to mdB.  value in mdB = (1000*20*log10(reg value/2^16)) */
-            carrierGain = (int32_t)(1000U * 20U * (double)log10((double)carrierGainReg / DIG_GAIN_MULT));
+            //carrierGain = (int32_t)(1000U * 20U * (double)log10((double)carrierGainReg / DIG_GAIN_MULT));
+	    carrierGain = (int32_t)(20 * log10((100000UL * (double)carrierGainReg) / DIG_GAIN_MULT) - 100);
         }
 
         antCalCarrierCfg->rxCarrierGainForAntCal[i] = carrierGain;
@@ -8750,8 +8751,9 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgGet(adi_a
         if (carrierGainReg != 0)
         {
             /* Convert from 7.16 to mdB.  value in mdB = (1000*20*log10(reg value/2^16)) */
-            carrierGain = (int32_t)(1000U * 20U * (double)log10((double)carrierGainReg / DIG_GAIN_MULT));
-        }
+            //carrierGain = (int32_t)(1000U * 20U * (double)log10((double)carrierGainReg / DIG_GAIN_MULT));
+	    carrierGain = (int32_t)(20 * log10((100000UL * (double)carrierGainReg) / DIG_GAIN_MULT) - 100);
+	}
 
         antCalCarrierCfg->txCarrierGainForAntCal[i] = carrierGain;
     }
@@ -8759,7 +8761,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgGet(adi_a
 cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
-
+#endif
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierGainCountersClear(adi_adrv904x_Device_t* const device)
 {
         adi_adrv904x_ErrAction_e recoveryAction = ADI_ADRV904X_ERR_ACT_CHECK_PARAM;

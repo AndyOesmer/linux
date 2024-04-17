@@ -1683,7 +1683,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgSet(adi_a
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgSet_v2(adi_adrv904x_Device_t* const device,
                                                                               const adi_adrv904x_RadioCtrlAntCalCarrierCfg_t* const antCalCarrierCfg,
                                                                               uint32_t postCalPatternId);
-
+#ifndef __KERNEL__
 /**
 * \brief Get the antenna cal carrier config runtime structure.
 *
@@ -1700,7 +1700,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgSet_v2(ad
 */
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_RadioCtrlAntCalCarrierCfgGet(adi_adrv904x_Device_t* const device,
                                                                            adi_adrv904x_RadioCtrlAntCalCarrierCfg_t* const antCalCarrierCfg);
-
+#endif
 /**
 * \brief Clear the antenna cal GPIO counter and gain table index.
 *

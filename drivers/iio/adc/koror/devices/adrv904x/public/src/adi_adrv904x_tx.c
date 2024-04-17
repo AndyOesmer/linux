@@ -41,6 +41,7 @@
 
 #define ADI_FILE ADI_ADRV904X_FILE_PUBLIC_TX
 
+# define UINT16_MAX		(65535)
 
 #define ADI_ADVRV904X_TX_DUC1_PLAYBACK_RAM_OFFSET 0x8000U   /*!< DUC1 Playback RAM Offset */
 #define ADI_ADVRV904X_TX0_PLAYBACK_RAM_BASEADDR 0x60800000U /*!< Base Address of Playback RAM for TX0 */
@@ -6138,7 +6139,8 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierGainAdjustSet(adi_adrv904
     }
 
     /* Convert from mdB to 7.16. (reg value = 10**(value in mdB/1000/20)) * 2^16) */
-    bfValue = (uint32_t)((double)pow(10, (double)gain_mdB / 1000U / 20U) * DIG_GAIN_MULT);
+    //bfValue = (uint32_t)((double)pow(10, (double)gain_mdB / 1000U / 20U) * DIG_GAIN_MULT);
+    bfValue = (uint32_t)int_20db_to_mag(DIG_GAIN_MULT, gain_mdB);
 
     /* Write out the enable */
     for (txIdx = 0U; txIdx < ADI_ADRV904X_MAX_TXCHANNELS; txIdx++)
@@ -6245,7 +6247,7 @@ cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
 
-
+#ifndef __KERNEL__
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierGainAdjustGet(adi_adrv904x_Device_t * const              device,
                                                                      const adi_adrv904x_TxCarrierMask_t * const txCarrierSel,
                                                                      int32_t * const                            gain_mdB)
@@ -6363,7 +6365,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierGainAdjustGet(adi_adrv904
 cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
-
+#endif
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierBandAttenSet(adi_adrv904x_Device_t * const           device,
                                                                     const adi_adrv904x_TxBandMask_t * const txBandMask,
                                                                     const uint32_t                          atten_mdB)
@@ -6424,7 +6426,8 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierBandAttenSet(adi_adrv904x
                 {
                     /* Convert from the requested atten level (milli-dB) to equivalent */
                     /* Convert from mdB to 0.8. (reg value = 10**(value in mdB/1000/20)) * 2^8) */
-                    attenRegVal = (uint32_t)((double)pow(10, (0.0 - (double)atten_mdB) / 1000U / 20U) * DIG_GAIN_MULT);
+                    //attenRegVal = (uint32_t)((double)pow(10, (0.0 - (double)atten_mdB) / 1000U / 20U) * DIG_GAIN_MULT);
+		    attenRegVal = (uint32_t)int_20db_to_mag(DIG_GAIN_MULT, atten_mdB);
                    
                     if (attenRegVal > 255U)
                     {
@@ -6473,7 +6476,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierBandAttenSet(adi_adrv904x
 cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
-
+#ifndef __KERNEL__
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierBandAttenGet(adi_adrv904x_Device_t * const      device,
                                                                     const adi_adrv904x_TxBandMask_t * const txBandSel,
                                                                     uint32_t * const atten_mdB)
@@ -6558,7 +6561,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierBandAttenGet(adi_adrv904x
 cleanup:
     ADI_ADRV904X_API_EXIT(&device->common, recoveryAction);
 }
-
+#endif
 
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_PostDpdAttenSet(adi_adrv904x_Device_t * const              device,
                                                               const adi_adrv904x_TxDpdMask_t * const     txDpdMask,

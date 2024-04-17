@@ -1436,7 +1436,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_HardClipperStatisticsGet(adi_adrv9
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierGainAdjustSet(adi_adrv904x_Device_t * const              device,
                                                                      const adi_adrv904x_TxCarrierMask_t * const txCarrierMask,
                                                                      const int32_t                              gain_mdB);   
-
+#ifndef __KERNEL__
 /**
  * \brief Readback current Tx Carrier Gain Adjustment in mdB. Expected range is -90dB to +36dB.
  * 
@@ -1453,7 +1453,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierGainAdjustSet(adi_adrv904
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierGainAdjustGet(adi_adrv904x_Device_t * const              device,
                                                                      const adi_adrv904x_TxCarrierMask_t * const txCarrierSel,
                                                                      int32_t * const                            gain_mdB);
-
+#endif
 /** 
 * \brief Set the Tx carrier band attenuation 
 * 
@@ -1472,7 +1472,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierGainAdjustGet(adi_adrv904
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierBandAttenSet(adi_adrv904x_Device_t * const           device, 
                                                                     const adi_adrv904x_TxBandMask_t * const txBandMask,
                                                                     const uint32_t atten_mdB);
-
+#ifndef __KERNEL__
 /** 
  * \brief Get the Tx carrier band attenuation 
  * 
@@ -1489,7 +1489,7 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierBandAttenSet(adi_adrv904x
 ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_TxCarrierBandAttenGet(adi_adrv904x_Device_t * const      device, 
                                                                     const adi_adrv904x_TxBandMask_t * const txBandSel,
                                                                     uint32_t * const atten_mdB);
-
+#endif
 /** 
 * \brief Set the Tx Post DPD Digital Attenuation
 * 
