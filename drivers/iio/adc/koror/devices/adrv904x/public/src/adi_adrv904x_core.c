@@ -336,7 +336,11 @@ ADI_API adi_adrv904x_ErrAction_e adi_adrv904x_Initialize(adi_adrv904x_Device_t* 
     }
     
     /* Populate initialization time for device */
+#ifndef __KERNEL__
     ADI_LIBRARY_TIME(&(device->devStateInfo.initGlobalTime));
+#else
+    device->devStateInfo.initGlobalTime = ktime_get_seconds();
+#endif
 
     recoveryAction = adrv904x_Core_MbiasBgCtat_BfSet(device,
                                                     NULL,

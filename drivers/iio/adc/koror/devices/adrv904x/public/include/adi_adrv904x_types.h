@@ -435,7 +435,11 @@ typedef struct adi_adrv904x_Info
     uint8_t                             dfeSwTest;                                               /*!< DFE Software test signal */
     uint8_t                             rsStarted;                                               /*!< Radio Sequencer started */
     uint8_t                             rsRadioRunning;                                          /*!< Radio Sequencer Radio Running */
+#ifndef __KERNEL__
     time_t                              initGlobalTime;                                          /*!< Initialization time of the system */
+#else
+    time64_t                            initGlobalTime;
+#endif
     adi_adrv904x_RsSpecialSequencer_t   specialSequencerPatternInfo;                             /*!< Customer special frame timing pattern config for each radio sequencer */
     adi_adrv904x_RadioCtrlAlarmGpioConfig_t alarmGpioConfig;                                     /*!< GPIO pin configuration used by alarms */
     adi_adrv904x_DfeCtrlTxToOrxMappingConfig_t dfeCtrlTxToOrxMappingConfig;                      /*!< Internal use only: DFE Control Mode Tx to Orx Mapping Configuration */
