@@ -802,9 +802,15 @@ static adi_adrv904x_ErrAction_e adrv904x_CarrierJesdSlotTableCalculate( adi_adrv
         }
 
         /* Swap */
+#ifndef __KERNEL__
         swap(&ratios[minIdx], &ratios[carrierIdx]);
         swap(&count[minIdx], &count[carrierIdx]);
         swap(&indexMap[minIdx], &indexMap[carrierIdx]);
+#else
+	adrv904x_swap(&ratios[minIdx], &ratios[carrierIdx]);
+        adrv904x_swap(&count[minIdx], &count[carrierIdx]);
+        adrv904x_swap(&indexMap[minIdx], &indexMap[carrierIdx]);
+#endif
     }
 
     /* Calculate f_jesd/f_jesd_sample_rate ratio for each carrier after reordering based on sample rate */
