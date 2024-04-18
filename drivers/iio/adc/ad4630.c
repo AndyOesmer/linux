@@ -28,7 +28,7 @@
 #include <linux/regmap.h>
 #include <linux/sysfs.h>
 #include <linux/spi/spi.h>
-#include <linux/spi/spi-engine.h>
+#include <linux/spi/spi-engine-ex.h>
 #include <linux/util_macros.h>
 #include <linux/units.h>
 #include <linux/types.h>
@@ -720,8 +720,8 @@ static int ad4630_buffer_preenable(struct iio_dev *indio_dev)
 		goto out_error;
 
 	spi_bus_lock(st->spi->master);
-	spi_engine_offload_load_msg(st->spi, &st->offload_msg);
-	spi_engine_offload_enable(st->spi, true);
+	spi_optimize_message(st->spi, &st->offload_msg);
+	spi_engine_ex_offload_enable(st->spi, true);
 	ad4630_sampling_enable(st, true);
 
 	return 0;
@@ -741,7 +741,7 @@ static int ad4630_buffer_postdisable(struct iio_dev *indio_dev)
 	if (ret)
 		goto out_error;
 
-	spi_engine_offload_enable(st->spi, false);
+	spi_engine_ex_offload_enable(st->spi, false);
 	spi_bus_unlock(st->spi->master);
 
 	ret = regmap_read(st->regmap, AD4630_REG_ACCESS, &dummy);
