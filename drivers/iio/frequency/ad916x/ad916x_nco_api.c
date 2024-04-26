@@ -5,7 +5,7 @@
 #include "api_errors.h"
 #include "utils.h"
 
-#define AD916x_MAX_NUM_NCO 1
+#define AD916x_MAX_NUM_NCO 4 // ***changed
 
 static int ad916x_nco_set_configure_main(ad916x_handle_t *h,
 								const int64_t carrier_freq_hz,
@@ -150,6 +150,19 @@ static int ad916x_nco_calc_freq_int_main(ad916x_handle_t *h, uint64_t int_part,
 	return API_ERROR_OK;
 }
 
+// FFH FEATURE
+/* ---------------------------------------------------------------------------- */
+static int ad916x_nco_calc_freq_int_nco(ad916x_handle_t *h, uint64_t int_part,
+										int64_t *carrier_freq_hz)
+{
+	uint64_t tmpa_lo, tmpa_hi;
+	adi_api_utils_mult_128(int_part, h->dac_freq_hz, &tmpa_hi, &tmpa_lo);
+	adi_api_utils_div_128(tmpa_hi, tmpa_lo, 0, ADI_POW2_32, &tmpa_hi, &tmpa_lo);
+	*carrier_freq_hz = tmpa_lo;
+	return API_ERROR_OK;
+}
+/* ---------------------------------------------------------------------------- */
+
 static int ad916x_nco_calc_freq_fract_main(ad916x_handle_t *h,
 							uint64_t int_part, uint64_t frac_part_a,
 							uint64_t frac_part_b, int64_t *carrier_freq_hz)
@@ -220,6 +233,62 @@ static int ad916x_nco_get_configure_main(ad916x_handle_t *h,
 	return API_ERROR_OK;
 }
 
+// FFH Feature
+/* ------------------------------------------------------------------- */
+static int ad916x_nco_nr_get(ad916x_handle_t *h, const unsigned int nco_nr,
+				int64_t *carrier_freq_hz, uint16_t *amplitude, int *dc_test_en)
+{
+	uint8_t tmp_reg;
+	int err;
+	/* Get amplitude */
+	err = ad916x_dc_test_get_mode(h, amplitude, dc_test_en);
+	if (err != API_ERROR_OK) {
+		return err;
+	}
+	/* Check if modulus is used */
+	err = ad916x_register_read(h, AD916x_REG_DATAPATH_CFG, &tmp_reg);
+	if (err != API_ERROR_OK) {
+		return err;
+	}
+	if(tmp_reg & BIT(2)) {
+		/* modulus enabled */
+		uint64_t int_part;
+		uint64_t frac_part_a;
+		uint64_t frac_part_b;
+		err = ad916x_nco_get_ftw(h, nco_nr, &int_part, &frac_part_a, &frac_part_b);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		if((frac_part_a == 0) || (frac_part_b == 0)) {
+			/* Division by 0 = Modulus is off. */
+			err = ad916x_nco_calc_freq_int_(h, int_part, carrier_freq_hz);
+			if (err != API_ERROR_OK) {
+				return err;
+			}
+			return API_ERROR_OK;
+		}
+		err = ad916x_nco_calc_freq_fract_main(h, int_part, frac_part_a,
+											frac_part_b, carrier_freq_hz);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+	} else {
+		/* No modulus used */
+		/* Get FTW */
+		uint64_t int_part;
+		err = ad916x_nco_get_ftw(h, nco_nr, &int_part,
+									INVALID_POINTER, INVALID_POINTER);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		err = ad916x_nco_calc_freq_int_nco(h, int_part, carrier_freq_hz);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+	}
+	return API_ERROR_OK;
+}
+/* ------------------------------------------------------------------- */
 
 ADI_API int ad916x_nco_set_phase_offset(ad916x_handle_t *h, const uint16_t po)
 {
@@ -510,10 +579,95 @@ ADI_API int ad916x_nco_get_ftw(ad916x_handle_t *h, const unsigned int nco_nr,
 			return err;
 		}
 		*ftw |= tmp_reg;
-	} else {
+	
+	// FFH Feature
+	/* ------------------------------------------------------------------- */	
+	} else if (nco_nr == 1) {
+		/* Get FTW for the FFH1 */
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW1_3, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw = tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW1_2, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW1_1, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW1_0, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+
+		return API_ERROR_INVALID_PARAM;
+
+	} else if (nco_nr == 2) {
+		/* Get FTW for the FFH2 */
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW2_3, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw = tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW2_2, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW2_1, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW2_0, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+
+		return API_ERROR_INVALID_PARAM;
+
+	} else if (nco_nr == 3) {
+		/* Get FTW for the FFH3 */
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW3_3, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw = tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW3_2, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW3_1, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+		(*ftw) <<= 8;
+		err = ad916x_register_read(h, AD916x_REG_HOPF_FTW3_0, &tmp_reg);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		*ftw |= tmp_reg;
+
 		return API_ERROR_INVALID_PARAM;
 	}
-
+	/* ------------------------------------------------------------------- */
+	
 	/* Get the MODULUS if needed */
 	if ((acc_modulus != INVALID_POINTER) && (acc_delta != INVALID_POINTER)) {
 		err = ad916x_register_read(h, AD916x_REG_ACC_DELTA5, &tmp_reg);
@@ -736,6 +890,13 @@ ADI_API int ad916x_nco_get(ad916x_handle_t *h, const unsigned int nco_nr,
 		return ad916x_nco_get_configure_main(h, carrier_freq_hz, amplitude,
 												dc_test_en);
 	}
+	// FFH Feature
+	/* -------------------------------------------------- */
+	else if (nco_nr >= 1 && nco_nr <=3) {
+		return ad916x_nco_nr_get(h, nco_nr, carrier_freq_hz, amplitude,
+												dc_test_en);
+	}
+	/* -------------------------------------------------- */
 
 	return API_ERROR_INVALID_PARAM;
 }
