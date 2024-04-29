@@ -813,16 +813,16 @@ static IIO_DEVICE_ATTR(out_voltage_fir85_enable,
 
 // FFH FEATURE
 /* ----------------------------- */
-static IIO_DEVICE_ATTR(nco_mode_select,
-		       0644,
-		       ad9162_attr_show,
-		       ad9162_attr_store,
-		       2);
+// static IIO_DEVICE_ATTR(nco_mode_select,
+// 		       0644,
+// 		       ad9162_attr_show,
+// 		       ad9162_attr_store,
+// 		       2);
 
 static struct attribute *ad9162_attributes[] = {
 	&iio_dev_attr_out_altvoltage4_frequency_nco.dev_attr.attr,
 	&iio_dev_attr_out_voltage_fir85_enable.dev_attr.attr,
-	&iio_dev_attr_co_mode_select.dev_attr.attr, // additional
+	// &iio_dev_attr_nco_mode_select.dev_attr.attr, // additional
 	NULL,
 };
 /* ----------------------------- */
@@ -913,6 +913,18 @@ static ssize_t ad916x_write_ext(struct iio_dev *indio_dev,
 		ret = ad916x_nco_set(&st->dac_h, 3, freq_hz, test_word,
 				     st->dc_test_mode);
 		break;
+
+	case AD916x_NCO_SEL:
+		
+		// baguhin
+		
+		ret = kstrtoll(buf, 10, &freq_hz);
+		if (ret)
+			break;
+
+		/* just use the current test word */
+		ret = ad916x_nco_reset(&st->dac_h)
+		break;
 	/* --------------------------------------- */
 	
 	case AD916x_SAMPLING_FREQUENCY:
@@ -992,6 +1004,14 @@ static ssize_t ad916x_read_ext(struct iio_dev *indio_dev,
 	case AD916x_NCO_3_FREQ:
 		ret = ad916x_nco_get(&st->dac_h, 3, &freq, &test_word,
 				     &dc_test_en);
+		if (!ret)
+			ret = sprintf(buf, "%lld\n", freq);
+		break;
+	
+	case AD916x_NCO_SEL:
+		
+		// baguhin
+		ret = ad916x_nco_reset(&st->dac_h)
 		if (!ret)
 			ret = sprintf(buf, "%lld\n", freq);
 		break;
