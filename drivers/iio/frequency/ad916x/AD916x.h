@@ -1095,6 +1095,8 @@ ADI_API int ad916x_nco_get(ad916x_handle_t *h, const unsigned int nco_nr,
  */
 ADI_API int ad916x_nco_reset(ad916x_handle_t *h);
 
+ADI_API int ad916x_nco_select(ad916x_handle_t *h, const unsigned int nco_nr);
+
 /**
  * \brief Perform SPI register write access to AD916x Device
  *
@@ -1141,5 +1143,12 @@ ADI_API int ad916x_register_read(ad916x_handle_t *h,
  */
 ADI_API int ad916x_get_revision(ad916x_handle_t *h, uint8_t *rev_major,
 								uint8_t *rev_minor, uint8_t *rev_rc);
+
+
+ADI_API int ad916x_nco_nr_set_ftw(ad916x_handle_t *h, const unsigned int nco_nr,
+								const uint64_t ftw, const uint64_t acc_modulus,
+								const uint64_t acc_delta);
+
+
 
 #endif /* !__AD916XAPI_H__ */

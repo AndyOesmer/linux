@@ -845,6 +845,7 @@ static ssize_t ad916x_write_ext(struct iio_dev *indio_dev,
 	/* en just because we have to pass it to ad916x_dc_test_get_mod */
 	int ret, en;
 	bool fir85_en;
+	u64 nco_mode_select;
 
 	mutex_lock(&st->lock);
 	switch ((u32)private) {
@@ -880,6 +881,9 @@ static ssize_t ad916x_write_ext(struct iio_dev *indio_dev,
 
 		ret = ad916x_nco_set(&st->dac_h, 1, freq_hz, test_word,
 				     st->dc_test_mode);
+		if (ret) {
+			return ret;
+		}
 		break;
 
 	case AD916x_NCO_2_FREQ:
@@ -896,6 +900,9 @@ static ssize_t ad916x_write_ext(struct iio_dev *indio_dev,
 
 		ret = ad916x_nco_set(&st->dac_h, 2, freq_hz, test_word,
 				     st->dc_test_mode);
+		if (ret) {
+			return ret;
+		}
 		break;
 
 	case AD916x_NCO_3_FREQ:
@@ -912,18 +919,24 @@ static ssize_t ad916x_write_ext(struct iio_dev *indio_dev,
 
 		ret = ad916x_nco_set(&st->dac_h, 3, freq_hz, test_word,
 				     st->dc_test_mode);
+		if (ret) {
+			return ret;
+		}
 		break;
 
 	case AD916x_NCO_SEL:
 		
 		// baguhin
 		
-		ret = kstrtoll(buf, 10, &freq_hz);
+		ret = kstrtoll(buf, 10, &nco_mode_select);
 		if (ret)
 			break;
 
-		/* just use the current test word */
-		ret = ad916x_nco_reset(&st->dac_h)
+		ret = ad916x_nco_select(&st->dac_h, nco_mode_select);
+		if (ret) {
+			return ret;
+		}
+
 		break;
 	/* --------------------------------------- */
 	
@@ -975,6 +988,7 @@ static ssize_t ad916x_read_ext(struct iio_dev *indio_dev,
 	u16 test_word;
 	int fir85_en;
 	int ret, dc_test_en;
+	u8 nco_nr;
 
 	mutex_lock(&st->lock);
 	switch ((u32)private) {
@@ -1011,9 +1025,11 @@ static ssize_t ad916x_read_ext(struct iio_dev *indio_dev,
 	case AD916x_NCO_SEL:
 		
 		// baguhin
-		ret = ad916x_nco_reset(&st->dac_h)
-		if (!ret)
-			ret = sprintf(buf, "%lld\n", freq);
+		ret = ad916x_register_read(&st->dac_h, AD916x_REG_HOPF_CTRL, &nco_nr);
+		if (!ret) {
+			nco_nr &= 31u;
+			ret = sprintf(buf, "%lld\n", nco_nr);
+		}
 		break;
 	/* -------------------------------------------------------------- */
 

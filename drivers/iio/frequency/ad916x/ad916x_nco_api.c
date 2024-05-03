@@ -139,6 +139,141 @@ static int ad916x_nco_set_configure_main(ad916x_handle_t *h,
 	return API_ERROR_OK;
 }
 
+// FFH FEATURE
+/* ---------------------------------------------------------------------------- */
+static int ad916x_nco_set_configure_nr(ad916x_handle_t *h,const unsigned int nco_nr,
+								const int64_t carrier_freq_hz,
+								const uint16_t amplitude,
+								const int dc_test_en)
+{
+	uint64_t tmp_freq;
+	int err;
+	/* check if the desired frequency power of 2 */
+	uint8_t is_pow2 = 0;
+
+	if (carrier_freq_hz == 0)
+		return API_ERROR_INVALID_PARAM;
+
+	tmp_freq = carrier_freq_hz;
+	while (tmp_freq <= h->dac_freq_hz) {
+		if ((tmp_freq) == h->dac_freq_hz) {
+			/* It is power of 2 */
+			is_pow2 = 1;
+			break;
+		}
+		tmp_freq *= 2;
+	}
+
+	if (is_pow2 == 1) {
+		/* Integer NCO mode */
+		/* As we are in Integer NCO mode it guranteed the
+		   value is integer power of 2 */
+		tmp_freq = DIV64_U64(h->dac_freq_hz, carrier_freq_hz);
+		tmp_freq = DIV64_U64(ADI_POW2_32, tmp_freq);
+		/* Disable modulus */
+		err = ad916x_nco_set_enable(h, 0, 1);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		if(dc_test_en == 0) {
+			/* DC Test Disable */
+			err = ad916x_dc_test_set_mode(h, amplitude, 0);
+			if (err != API_ERROR_OK) {
+				return err;
+			}
+		} else {
+			/* Set interpolation mode - bypas */
+			err = ad916x_register_write(h, AD916x_REG_LANE_INTPL_MODE,
+											AD916x_JESD_LANES(8));
+			if (err != API_ERROR_OK) {
+				return err;
+			}
+			/* DC Test Enable */
+			err = ad916x_dc_test_set_mode(h, amplitude, 1);
+			if (err != API_ERROR_OK) {
+				return err;
+			}
+		}
+		/* Write FTW */
+		err = ad916x_nco_set_ftw(h, nco_nr, tmp_freq, 0, 0);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+	} else {
+		int gcd;
+		uint64_t int_part;
+		uint64_t frac_part_a;
+		uint64_t frac_part_b;
+		uint64_t M, N;
+		uint64_t tmp_ah, tmp_al, tmp_bh, tmp_bl, tmp_fh, tmp_fl;
+		/* Modulus NCO mode */
+
+		gcd = adi_api_utils_gcd(carrier_freq_hz, h->dac_freq_hz);
+		M = DIV64_U64(carrier_freq_hz, gcd);
+		N = DIV64_U64(h->dac_freq_hz, gcd);
+		
+		if (M > INT16_MAX) {
+			uint64_t mask = U64MSB;
+			int i = 0;
+			while (((mask & M) == 0) && (mask != 1)) {
+				mask >>= 1;
+				i++;
+			}
+			int_part = DIV64_U64(M*((uint64_t)1u << i), N);
+			int_part *= ((uint64_t)1u << (32 - i));
+		} else {
+			int_part = DIV64_U64(M*(ADI_POW2_32), N);
+		}
+
+		adi_api_utils_mult_128(M, ADI_POW2_32, &tmp_ah, &tmp_al);
+		adi_api_utils_mult_128(N, int_part, &tmp_bh, &tmp_bl);
+		adi_api_utils_subt_128(tmp_ah, tmp_al, tmp_bh, tmp_bl, &tmp_fh, &tmp_fl);
+		frac_part_a = tmp_fl;
+		frac_part_b = N;
+
+		gcd = adi_api_utils_gcd(frac_part_a, frac_part_b);
+		frac_part_a = DIV64_U64(frac_part_a, gcd);
+		frac_part_b = DIV64_U64(frac_part_b, gcd);
+
+		if ((frac_part_a > ADI_MAXUINT32) || (frac_part_b > ADI_MAXUINT32)) {
+			/* TODO: a better error */
+			return API_ERROR_INVALID_PARAM;
+		}
+		/* Enable modulus */
+		err = ad916x_nco_set_enable(h, 1, 1);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+
+		if(dc_test_en == 0) {
+			/* DC Test Disable */
+			err = ad916x_dc_test_set_mode(h, amplitude, 0);
+			if (err != API_ERROR_OK) {
+				return err;
+			}
+		} else {
+			/* Set interpolation mode - bypas */
+			err = ad916x_register_write(h, AD916x_REG_LANE_INTPL_MODE,
+											AD916x_JESD_LANES(8));
+			if (err != API_ERROR_OK) {
+				return err;
+			}
+			/* DC Test Enable */
+			err = ad916x_dc_test_set_mode(h, amplitude, 1);
+			if (err != API_ERROR_OK) {
+				return err;
+			}
+		}
+		/* Write FTW, A and B */
+		err = ad916x_nco_set_ftw(h, nco_nr, int_part, frac_part_a, frac_part_b);
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+	}
+	return API_ERROR_OK;
+}
+/* ---------------------------------------------------------------------------- */
+
 
 static int ad916x_nco_calc_freq_int_main(ad916x_handle_t *h, uint64_t int_part,
 										int64_t *carrier_freq_hz)
@@ -261,7 +396,7 @@ static int ad916x_nco_nr_get(ad916x_handle_t *h, const unsigned int nco_nr,
 		}
 		if((frac_part_a == 0) || (frac_part_b == 0)) {
 			/* Division by 0 = Modulus is off. */
-			err = ad916x_nco_calc_freq_int_(h, int_part, carrier_freq_hz);
+			err = ad916x_nco_calc_freq_int_nco(h, int_part, carrier_freq_hz);
 			if (err != API_ERROR_OK) {
 				return err;
 			}
@@ -528,6 +663,47 @@ ADI_API int ad916x_nco_set_ftw(ad916x_handle_t *h, const unsigned int nco_nr,
 	}
 	return API_ERROR_OK;
 }
+
+// FFH Feature
+/* --------------------------------------- */
+ADI_API int ad916x_nco_nr_set_ftw(ad916x_handle_t *h, const unsigned int nco_nr,
+								const uint64_t ftw, const uint64_t acc_modulus,
+								const uint64_t acc_delta)
+{
+	int err;
+	uint8_t tmp_reg;
+	if (h == INVALID_POINTER) {
+		return API_ERROR_INVALID_HANDLE_PTR;
+	}
+	if (nco_nr < 32) {
+		/* Get the FTW for NCO 1..31 */
+		err = ad916x_register_write(h, AD916x_REG_HOPF_FTWX_0(nco_nr),
+										ADI_GET_BYTE(ftw, 0));
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		err = ad916x_register_write(h, AD916x_REG_HOPF_FTWX_1(nco_nr),
+										ADI_GET_BYTE(ftw, 8));
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		err = ad916x_register_write(h, AD916x_REG_HOPF_FTWX_2(nco_nr),
+										ADI_GET_BYTE(ftw, 16));
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+		err = ad916x_register_write(h, AD916x_REG_HOPF_FTWX_3(nco_nr),
+										ADI_GET_BYTE(ftw, 24));
+		if (err != API_ERROR_OK) {
+			return err;
+		}
+	} else {
+		return API_ERROR_INVALID_PARAM;
+	}
+	return API_ERROR_OK;
+}
+
+/* --------------------------------------- */	
 
 ADI_API int ad916x_nco_get_ftw(ad916x_handle_t *h, const unsigned int nco_nr,
 								uint64_t *ftw, uint64_t *acc_modulus,
@@ -874,8 +1050,19 @@ ADI_API int ad916x_nco_set(ad916x_handle_t *h, const unsigned int nco_nr,
 		}
 	}
 
-	return ad916x_nco_set_configure_main(h, carrier_freq_hz, amplitude,
-												dc_test_en);
+	if (nco_nr == 0) {
+		return ad916x_nco_set_configure_main(h, carrier_freq_hz, amplitude,
+													dc_test_en);
+	
+	// FFH Feature
+	/* --------------------------------------- */
+	} else {
+		return ad916x_nco_set_configure_nr(h, nco_nr, carrier_freq_hz, amplitude,
+											dc_test_en);
+	/* --------------------------------------- */
+	}
+
+	return 0;
 }
 
 ADI_API int ad916x_nco_get(ad916x_handle_t *h, const unsigned int nco_nr,
@@ -914,6 +1101,26 @@ ADI_API int ad916x_nco_reset(ad916x_handle_t *h)
 	}
 	tmp_reg &= ~(3u << 6);
 	tmp_reg |= BIT(6);
+	err = ad916x_register_write(h, AD916x_REG_HOPF_CTRL, tmp_reg);
+	if (err != API_ERROR_OK) {
+		return err;
+	}
+	return API_ERROR_OK;
+}
+
+ADI_API int ad916x_nco_select(ad916x_handle_t *h, const unsigned int nco_nr)
+{
+	int err;
+	uint8_t tmp_reg;
+	if (h == INVALID_POINTER) {
+		return API_ERROR_OK;
+	}
+	err = ad916x_register_read(h, AD916x_REG_HOPF_CTRL, &tmp_reg);
+	if (err != API_ERROR_OK) {
+		return err;
+	}
+	tmp_reg &= (7u << 5);
+	tmp_reg += nco_nr;
 	err = ad916x_register_write(h, AD916x_REG_HOPF_CTRL, tmp_reg);
 	if (err != API_ERROR_OK) {
 		return err;
